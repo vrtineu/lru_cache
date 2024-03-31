@@ -1,11 +1,33 @@
 defmodule LRUCache do
+  @moduledoc """
+  Least Recently Used (LRU) Cache
+  """
+
   defstruct [:capacity, :cache]
 
+  @doc """
+  Initializes the cache with a capacity.
+  """
   @spec init_(capacity :: integer) :: any
   def init_(capacity) do
     Agent.start_link(fn -> %__MODULE__{capacity: capacity, cache: []} end, name: __MODULE__)
   end
 
+  @doc """
+  Get the value (will always be positive) of the key if the key exists in the cache, otherwise return -1.
+
+  ## Examples
+
+      iex> LRUCache.get(1)
+      -1
+
+      iex> LRUCache.put(1, 1)
+      :ok
+
+      iex> LRUCache.get(1)
+      1
+
+  """
   @spec get(key :: integer) :: integer
   def get(key) do
     Agent.get_and_update(__MODULE__, fn %__MODULE__{cache: cache} = state ->
@@ -14,13 +36,24 @@ defmodule LRUCache do
           {-1, state}
 
         {_, value} ->
-          delete = List.keydelete(cache, key, 0)
-          new_cache = delete ++ [{key, value}]
+          new_cache = List.keydelete(cache, key, 0) ++ [{key, value}]
           {value, %__MODULE__{state | cache: new_cache}}
       end
     end)
   end
 
+  @doc """
+  Set or insert the value if the key is not already present. When the cache reached its capacity, it should invalidate the least recently used item before inserting a new item.
+
+  ## Examples
+
+      iex> LRUCache.put(1, 1)
+      :ok
+
+      iex> LRUCache.put(2, 2)
+      :ok
+
+  """
   @spec put(key :: integer, value :: integer) :: any
   def put(key, value) do
     Agent.update(__MODULE__, fn state ->
