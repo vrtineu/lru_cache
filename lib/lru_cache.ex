@@ -36,8 +36,7 @@ defmodule LRUCache do
           {-1, state}
 
         {_, value} ->
-          new_cache = List.keydelete(cache, key, 0) ++ [{key, value}]
-          {value, %__MODULE__{state | cache: new_cache}}
+          {value, access_cache(state, key, value)}
       end
     end)
   end
@@ -56,7 +55,7 @@ defmodule LRUCache do
   """
   @spec put(key :: integer, value :: integer) :: any
   def put(key, value) do
-    Agent.update(__MODULE__, fn state ->
+    Agent.update(__MODULE__, fn %__MODULE__{} = state ->
       state
       |> check_is_overflow(key)
       |> update_cache(key, value)
@@ -73,10 +72,14 @@ defmodule LRUCache do
 
   defp update_cache(%__MODULE__{cache: cache} = state, key, value) do
     if List.keymember?(cache, key, 0) do
-      new_cache = List.keydelete(cache, key, 0) ++ [{key, value}]
-      %__MODULE__{state | cache: new_cache}
+      access_cache(state, key, value)
     else
       %__MODULE__{state | cache: cache ++ [{key, value}]}
     end
+  end
+
+  defp access_cache(%__MODULE__{cache: cache} = state, key, value) do
+    new_cache = List.keydelete(cache, key, 0) ++ [{key, value}]
+    %__MODULE__{state | cache: new_cache}
   end
 end
